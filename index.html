@@ -88,6 +88,7 @@
       const [refreshInterval, setRefreshInterval] = useState(30000);
       const [countdown, setCountdown] = useState(0);
       const [customMinutes, setCustomMinutes] = useState('');
+      const [showPopupNotification, setShowPopupNotification] = useState(true);
 
       useEffect(() => {
         loadHistory();
@@ -167,7 +168,11 @@
               ip: entry.ip,
               previousDate: formatDate(exists.timestamp)
             });
-            alert('⚠️ IP ADDRESS IS USED!\n\nIP: ' + entry.ip + '\nPreviously detected: ' + formatDate(exists.timestamp));
+            
+            // Show popup alert only if enabled
+            if (showPopupNotification) {
+              alert('⚠️ IP ADDRESS IS USED!\n\nIP: ' + entry.ip + '\nPreviously detected: ' + formatDate(exists.timestamp));
+            }
           } else {
             updatedHistory.unshift(entry);
           }
@@ -318,7 +323,7 @@
               <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4">
                 <h2 className="text-xl font-bold flex items-center space-x-2 text-white">
                   <div className="w-5 h-5"><Clock /></div>
-                  <span>Auto Refresh & Save</span>
+                  <span>Auto Refresh & Notifications</span>
                 </h2>
               </div>
               
@@ -345,6 +350,25 @@
                           <span>Start</span>
                         </>
                       )}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <div>
+                      <span className="text-white font-semibold block mb-1">Popup Notifications</span>
+                      <span className="text-slate-400 text-xs">Show browser alert when duplicate IP is detected</span>
+                    </div>
+                    <button
+                      onClick={() => setShowPopupNotification(!showPopupNotification)}
+                      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                        showPopupNotification ? 'bg-emerald-500' : 'bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                          showPopupNotification ? 'translate-x-7' : 'translate-x-1'
+                        }`}
+                      />
                     </button>
                   </div>
 
