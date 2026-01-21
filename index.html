@@ -87,6 +87,7 @@
       const [autoRefresh, setAutoRefresh] = useState(false);
       const [refreshInterval, setRefreshInterval] = useState(30000);
       const [countdown, setCountdown] = useState(0);
+      const [customMinutes, setCustomMinutes] = useState('');
 
       useEffect(() => {
         loadHistory();
@@ -125,7 +126,11 @@
         try {
           const stored = localStorage.getItem('ip-history');
           if (stored) {
-            setIpHistory(JSON.parse(stored));
+            const parsed = JSON.parse(stored);
+            console.log('History loaded successfully:', parsed.length, 'entries');
+            setIpHistory(parsed);
+          } else {
+            console.log('No history found in localStorage');
           }
         } catch (err) {
           console.log('No history found or error loading:', err);
@@ -140,7 +145,18 @@
           type: ip.includes(':') ? 'IPv6' : 'IPv4'
         }));
 
-        const updatedHistory = [...ipHistory];
+        // Get the latest history from localStorage to ensure we have the most recent data
+        let currentHistory = [];
+        try {
+          const stored = localStorage.getItem('ip-history');
+          if (stored) {
+            currentHistory = JSON.parse(stored);
+          }
+        } catch (err) {
+          console.log('Error loading current history:', err);
+        }
+
+        const updatedHistory = [...currentHistory];
         const duplicates = [];
         
         for (const entry of newEntries) {
@@ -165,17 +181,21 @@
         
         try {
           localStorage.setItem('ip-history', JSON.stringify(updatedHistory));
+          console.log('History saved successfully:', updatedHistory.length, 'entries');
         } catch (err) {
           console.error('Error saving history:', err);
         }
       };
 
       const clearHistory = () => {
-        setIpHistory([]);
-        try {
-          localStorage.removeItem('ip-history');
-        } catch (err) {
-          console.error('Error clearing history:', err);
+        if (confirm('Are you sure you want to clear all IP history?')) {
+          setIpHistory([]);
+          try {
+            localStorage.removeItem('ip-history');
+            console.log('History cleared successfully');
+          } catch (err) {
+            console.error('Error clearing history:', err);
+          }
         }
       };
 
@@ -268,9 +288,18 @@
         { label: '5 min', value: 300000 },
         { label: '10 min', value: 600000 },
         { label: '15 min', value: 900000 },
-        { label: '30 min', value: 1800000 },
-        { label: '1 hr', value: 3600000 }
+        { label: '30 min', value: 1800000 }
       ];
+
+      const handleCustomMinutes = (e) => {
+        const value = e.target.value;
+        setCustomMinutes(value);
+        
+        if (value && !isNaN(value) && Number(value) > 0) {
+          const minutes = Number(value);
+          setRefreshInterval(minutes * 60000); // Convert minutes to milliseconds
+        }
+      };
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 py-12">
@@ -322,13 +351,16 @@
                     <label className="block text-purple-300 text-sm font-semibold mb-2">
                       Refresh Interval
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2 mb-3">
                       {timeOptions.map((option) => (
                         <button
                           key={option.value}
-                          onClick={() => setRefreshInterval(option.value)}
+                          onClick={() => {
+                            setRefreshInterval(option.value);
+                            setCustomMinutes('');
+                          }}
                           className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                            refreshInterval === option.value
+                            refreshInterval === option.value && !customMinutes
                               ? 'bg-emerald-500 text-white'
                               : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                           }`}
@@ -337,6 +369,26 @@
                         </button>
                       ))}
                     </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          min="1"
+                          max="1440"
+                          placeholder="Custom minutes (1-1440)"
+                          value={customMinutes}
+                          onChange={handleCustomMinutes}
+                          className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-emerald-500 focus:outline-none placeholder-slate-400"
+                        />
+                      </div>
+                      <span className="text-purple-300 text-sm font-semibold">minutes</span>
+                    </div>
+                    {customMinutes && !isNaN(customMinutes) && Number(customMinutes) > 0 && (
+                      <p className="text-emerald-400 text-xs mt-2">
+                        ✓ Custom interval set: {customMinutes} minute{Number(customMinutes) !== 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
 
                   {autoRefresh && (
